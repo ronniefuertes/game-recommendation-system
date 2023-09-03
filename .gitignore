@@ -2,3 +2,6 @@
 data_transformation/raw_data/australian_user_reviews.json
 data_transformation/raw_data/australian_users_items.json
 data_transformation/raw_data/output_steam_games.json
+data_preparation/raw_data/australian_user_reviews.json
+data_preparation/raw_data/australian_users_items.json
+data_preparation/raw_data/output_steam_games.json
