@@ -8,10 +8,18 @@ Available functions:
 
 import ast
 import pandas as pd
+import os
+
+# Get the current working directory
+current_directory = os.getcwd()
+
+# Construct an absolute file path
+path_1u = os.path.join(current_directory, 'api', 'datasets', 'user_data_1.csv')
+path_1g = os.path.join(current_directory, 'api', 'datasets', 'games_data_1.csv')
 
 
-path_1u = r"api\datasets\user_data_1.csv"
-path_1g = r"api\datasets\games_data_1.csv"
+# path_1u = r"api\datasets\user_data_1.csv"
+# path_1g = r"api\datasets\games_data_1.csv"
 
    
 def safe_literal_eval(s):
