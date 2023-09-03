@@ -5,21 +5,20 @@ Available Functions:
 - check_duplicates_summary: Check for duplicated values in a specific column.
 - check_none_values: Check for None values in a specific column.
 - column_data_types_summary: Generate a summary of data types present in a specified column.
-- convert_to_numeric: Converts a value to numeric type if possible, otherwise returns the original value.
+- convert_to_numeric: Converts a value to numeric type if possible, otherwise returns original value.
 - convert_list_to_numeric: Converts values of a list to numeric type using the convert_to_numeric function.
-- convert_column_to_numeric: Converts values of list of a column to numeric type using convert_list_to_numeric function.
+- convert_column_to_numeric: Converts values of a column to numeric type using convert_list_to_numeric function.
 - convert_to_date: Converts a value to datetime type with the pattern 'yyyy-mm-dd'.
 - convert_list_to_dates: Converts a list of values to datetime type using the convert_to_date function.
-- convert_column_to_dates: Converts values of a list of a column to datetime type using convert_list_to_dates function.
+- convert_column_to_dates: Converts values of a column to datetime type using convert_list_to_dates function.
 - extract_values: Extract values from nested data.
 - remove_duplicates: Remove duplicate rows from a DataFrame based on a specified column.
 - remove_none_values: Remove rows with None values in a specific column of a DataFrame.
-- transform_to_numeric: Transform the values of a column to numeric type based on specific rules.
+- convert_special_strings: Converts str values of a column to numeric type based on specific rules.
 """
 
 from datetime import datetime
 import pandas as pd
-import numpy as np
 
 
 def check_duplicates_summary(dataframe, column_name):
@@ -191,7 +190,7 @@ def convert_list_to_numeric(lst):
 
 def convert_column_to_numeric(dataframe, column_name):
     """
-    Converts the values of a column (which are lists) in a DataFrame to numeric type.
+    Converts the values of a column in a DataFrame to numeric type.
 
     Args:
         dataframe (pd.DataFrame): The DataFrame containing the column to convert.
@@ -208,17 +207,23 @@ def convert_column_to_numeric(dataframe, column_name):
 
     for idx, row in dataframe.iterrows():
         value = row[column_name]
-        msj, report_dic, converted_list = convert_list_to_numeric(value)
-        
-        if msj:
-            report[idx] = report_dic
-        converted_values.append(converted_list)
+        if isinstance(value, list):
+            msj, report_dic, converted_list = convert_list_to_numeric(value)
+            if msj:
+                report[idx] = report_dic
+            converted_values.append(converted_list)
+        else:
+            msj, converted_value = convert_to_numeric(value)
+            if msj:
+                report[idx] = value
+            converted_values.append(converted_value)
 
     dataframe[column_name] = converted_values
 
     summary = {
         "total_rows": len(dataframe),
         "column_name": column_name,
+        "num_failed_conversions": len(report),
         "report": report
     }
 
@@ -237,20 +242,23 @@ def convert_to_date(value, original_patterns=None):
         converted_value: Converted datetime object or original value if conversion fails.
         success: True if conversion was successful, False otherwise.
     """
-    if original_patterns is None:
-        original_patterns = ["%Y-%m-%d"]
-    
-    desired_format = "%Y-%m-%d"
-    
-    for pattern in original_patterns:
-        try:
-            original_date = datetime.strptime(value, pattern)
-            converted_value = original_date.strftime(desired_format)
-            return converted_value, True
-        except ValueError:
-            pass
-    
-    return value, False
+    if isinstance(value, str):
+        if original_patterns is None:
+            original_patterns = ["%Y-%m-%d"]
+        
+        desired_format = "%Y-%m-%d"
+        
+        for pattern in original_patterns:
+            try:
+                original_date = datetime.strptime(value, pattern)
+                converted_value = original_date.strftime(desired_format)
+                return converted_value, True
+            except ValueError:
+                pass
+        
+        return value, False
+    else:
+        return value, False
 
 
 def convert_list_to_dates(lst, original_patterns=None):
@@ -300,11 +308,16 @@ def convert_column_to_dates(dataframe, column_name, original_patterns=None):
 
     for idx, row in dataframe.iterrows():
         value = row[column_name]
-        msj, report_dic, converted_list = convert_list_to_dates(value, original_patterns)
-        
-        if not msj:
-            report[idx] = report_dic
-        converted_values.append(converted_list)
+        if isinstance(value, list):
+            msj, report_dic, converted_list = convert_list_to_dates(value, original_patterns)
+            if not msj:
+                report[idx] = report_dic
+            converted_values.append(converted_list)
+        else:
+            converted_value, msj = convert_to_date(value, original_patterns)
+            if not msj:
+                report[idx] = value
+            converted_values.append(converted_value)
 
     dataframe[column_name] = converted_values
 
@@ -479,56 +492,102 @@ def remove_none_values(dataframe, column_name):
 #     return dataframe
 
 
-def transform_to_numeric(dataframe, column_name):
+# def convert_special_strings(dataframe, column_name, special_strings, converted_value):
+#     """
+#     Converts special strings to a numeric value in a specified column of a DataFrame.
+
+#     Args:
+#         dataframe (pd.DataFrame): The DataFrame containing the column to convert.
+#         column_name (str): The name of the column to convert.
+#         special_strings (list): List of special strings to convert.
+#         converted_value: The numeric value to convert the special strings to.
+
+#     Returns:
+#         dict: A summary containing information about the conversion.
+#     """
+#     if column_name not in dataframe.columns:
+#         return {"error": f"Column '{column_name}' not found in the DataFrame"}
+
+#     total_rows = len(dataframe)
+#     num_failed_conversions = 0
+#     report = {}
+
+#     # Convert the special strings to lowercase
+#     special_strings_lower = [s.lower() for s in special_strings]
+
+#     for idx, value in enumerate(dataframe[column_name]):
+#         if type(value) not in (int, float):
+#             lowercase_value = value.lower()
+#             if lowercase_value in special_strings_lower:
+#                 dataframe.at[idx, column_name] = converted_value
+#             else:
+#                 try:
+#                     numeric_value = pd.to_numeric(value, errors="raise")
+#                     dataframe.at[idx, column_name] = numeric_value
+#                 except (ValueError, TypeError):
+#                     num_failed_conversions += 1
+#                     report[idx] = value
+#         else:
+#             dataframe.at[idx, column_name] = value
+
+#     summary = {
+#         "total_rows": total_rows,
+#         "column_name": column_name,
+#         "num_failed_conversions": num_failed_conversions,
+#         "report": report
+#     }
+
+#     return summary
+
+
+def convert_special_strings(dataframe, column_name, special_strings, converted_value):
     """
-    Transform the values of a column to numeric type, with special handling for "free to play".
-    
+    Converts special strings to a numeric value in a specified column of a DataFrame.
+
     Args:
-        dataframe (pd.DataFrame): The DataFrame containing the column to transform.
-        column_name (str): The name of the column to transform.
-        
+        dataframe (pd.DataFrame): The DataFrame containing the column to convert.
+        column_name (str): The name of the column to convert.
+        special_strings (list): List of special strings to convert.
+        converted_value: The numeric value to convert the special strings to.
+
     Returns:
-        dict: A summary containing information about the transformation.
+        dict: A summary containing information about the conversion.
     """
-    # Check if the specified column exists in the DataFrame
     if column_name not in dataframe.columns:
         return {"error": f"Column '{column_name}' not found in the DataFrame"}
-    
-    numeric_count = 0
-    non_numeric_count = 0
-    stored_info = []
-    
-    # Convert "free to play" and "free" to numeric
-    free_list = ["free to play", "free", 'Free Demo', "Free to Use", "Free Mod", "Free to try", "Install Theme", "Play the Demo", "Play for Free!", "Install Now", "Play WARMACHINE: Tactics Demo", "Third-party", "play now", "Free HITMAN™ Holiday Pack"]
-    dataframe[column_name] = np.where(
-        dataframe[column_name].str.lower().isin(free_list), 0, dataframe[column_name]
-    )
-    
-    # Convert values to numeric using pd.to_numeric
-    numeric_values = pd.to_numeric(dataframe[column_name], errors="coerce")
-    numeric_mask = numeric_values.notnull()
-    
-    # Update the original column with numeric values
-    dataframe.loc[numeric_mask, column_name] = numeric_values[numeric_mask]
-    
-    non_numeric_mask = ~numeric_mask
-    non_numeric_count = non_numeric_mask.sum()
-    
-    # Store non-numeric values information
-    stored_info = [
-        {"index": index, "value": value}
-        for index, value in dataframe[column_name][non_numeric_mask].items()
-    ]
-    
-    total_values = len(dataframe)
-    numeric_count = numeric_mask.sum()
-    
-    # Create a summary dictionary
+
+    total_rows = len(dataframe)
+    num_failed_conversions = 0
+    report = {}
+
+    # Convert the special strings to lowercase
+    special_strings_lower = set(map(str.lower, special_strings))
+
+    def convert_value(row):
+        value = row[column_name]
+        index = row.name
+        if pd.isna(value):
+            return value
+        if isinstance(value, str):
+            lowercase_value = value.lower()
+            if lowercase_value in special_strings_lower:
+                return converted_value
+            try:
+                numeric_value = pd.to_numeric(value, errors="raise")
+                return numeric_value
+            except (ValueError, TypeError):
+                nonlocal num_failed_conversions
+                num_failed_conversions += 1
+                report[index] = value
+        return value
+
+    dataframe[column_name] = dataframe.apply(convert_value, axis=1)
+
     summary = {
-        "total_values": total_values,
-        "numeric_count": numeric_count,
-        "non_numeric_count": non_numeric_count,
-        "stored_info": stored_info
+        "total_rows": total_rows,
+        "column_name": column_name,
+        "num_failed_conversions": num_failed_conversions,
+        "report": report
     }
-    
+
     return summary
