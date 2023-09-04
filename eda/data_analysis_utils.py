@@ -12,6 +12,7 @@ Available functions:
 
 
 import ast
+from datetime import datetime
 import pandas as pd
 
 
@@ -206,3 +207,104 @@ def safe_literal_eval(s):
 #             non_valid_literals_summary[index] = value
 
 #     return non_valid_literals_summary
+
+
+def convert_to_date(value, original_patterns=None):
+    """
+    Converts a value to datetime type with the pattern 'yyyy-mm-dd'.
+
+    Args:
+        value: The value to be converted.
+        original_patterns: Optional list of possible original date patterns.
+
+    Returns:
+        converted_value: Converted datetime object or original value if conversion fails.
+        success: True if conversion was successful, False otherwise.
+    """
+    if isinstance(value, str):
+        if original_patterns is None:
+            original_patterns = ["%Y-%m-%d"]
+        
+        desired_format = "%Y-%m-%d"
+        
+        for pattern in original_patterns:
+            try:
+                original_date = datetime.strptime(value, pattern)
+                converted_value = original_date.strftime(desired_format)
+                return converted_value, True
+            except ValueError:
+                pass
+        
+        return value, False
+    else:
+        return value, False
+
+
+def convert_list_to_dates(lst, original_patterns=None):
+    """
+    Converts a list of values to datetime type using the convert_to_date function.
+
+    Args:
+        lst: The list of values to be converted.
+        original_patterns: Optional list of possible original date patterns.
+
+    Returns:
+        success: True if all conversions were successful, False otherwise.
+        report: Dictionary containing index-value pairs of values that couldn't be converted.
+        converted_list: The list with converted values or original values.
+    """
+    success = True
+    converted_list = []
+    report = {}
+
+    for idx, value in enumerate(lst):
+        converted_value, conversion_success = convert_to_date(value, original_patterns)
+        if not conversion_success:
+            success = False
+            report[idx] = value
+        converted_list.append(converted_value)
+
+    return success, report, converted_list
+
+
+def convert_column_to_dates(dataframe, column_name, original_patterns=None):
+    """
+    Converts the values of a column in a DataFrame to datetime type using the convert_list_to_dates function.
+
+    Args:
+        dataframe: The DataFrame containing the column to be converted.
+        column_name: The name of the column to be converted.
+        original_patterns: Optional list of possible original date patterns.
+
+    Returns:
+        summary: A summary dictionary containing information about the conversion.
+    """
+    if column_name not in dataframe.columns:
+        return {"error": f"Column '{column_name}' not found in the DataFrame"}
+
+    converted_values = []
+    report = {}
+
+    for idx, row in dataframe.iterrows():
+        value = row[column_name]
+        if isinstance(value, list):
+            msj, report_dic, converted_list = convert_list_to_dates(value, original_patterns)
+            if not msj:
+                report[idx] = report_dic
+            converted_values.append(converted_list)
+        else:
+            converted_value, msj = convert_to_date(value, original_patterns)
+            if not msj:
+                report[idx] = value
+            converted_values.append(converted_value)
+
+    dataframe[column_name] = converted_values
+
+    summary = {
+        "total_rows": len(dataframe),
+        "column_name": column_name,
+        "num_failed_conversions": len(report),
+        "report": report
+    }
+
+    return summary
