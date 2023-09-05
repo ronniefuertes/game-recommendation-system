@@ -312,7 +312,7 @@ def convert_column_to_dates(dataframe, column_name, original_patterns=None):
 
 def correspond(dataframe, column_name_1, column_name_2):
     """ Create a dict to store a value_1 with it's corresponding value_2"""
-    
+
     # Initialize an empty dictionary to store ID-time pairs
     key_val = {}
     
@@ -351,3 +351,61 @@ def correspond(dataframe, column_name_1, column_name_2):
     
     # Return the dictionary containing ID-time pairs and the list of inconsistent rows
     return key_val, report
+
+
+def correspond_total(dataframe, id_column, time_column, user_id_column, user_url_column):
+    """ Create a list to store values for a dataframe """
+    
+    # Initialize an empty list to store values for the DataFrame
+    list_for_df = []
+    
+    # Initialize an empty list to keep track of rows with inconsistent data
+    report = []
+    
+    # Iterate through each row in the DataFrame
+    for idx_row, row in dataframe.iterrows():
+        # Extract the ID list and time list from the specified columns
+        id_list = row[id_column]
+        time_list = row[time_column]
+        user_id_value = row[user_id_column]
+        user_url_value = row[user_url_column]
+        
+        # Check if the lengths of the ID list and time list are the same
+        if len(id_list) == len(time_list):
+            # Iterate through each ID and its corresponding time
+            for idx_id, id in enumerate(id_list):
+                sub_list = []
+                sub_list.append(id)
+                sub_list.append(time_list[idx_id])
+                sub_list.append(user_id_value)
+                sub_list.append(user_url_value)
+
+                list_for_df.append(sub_list)
+
+        # Check if the time_list is empty
+        elif len(time_list) == 0:
+            # If time_list is empty, initialize the ID entries in list_for_df to 0
+            for idx_id, id in enumerate(id_list):
+                sub_list = []
+                sub_list.append(id)
+                sub_list.append(0)
+                sub_list.append(user_id_value)
+                sub_list.append(user_url_value)
+
+                list_for_df.append(sub_list)
+        
+        else:
+            # If the lengths of ID and time lists don't match and time_list is not empty,
+            # record the row index as an inconsistency
+            report.append(idx_row)
+    
+    # Return the list of lists containing ID-time pairs and the list of inconsistent rows
+    return list_for_df, report
+
+
+def create_dict_genre(dataframe):
+    def create_user_data(row):
+        return {'user_id': row['user_id'], 'time_spent': row['time_spent'], 'user_url': row['user_url']}
+
+    grouped = dataframe.groupby('genres').apply(lambda group: group.apply(create_user_data, axis=1).tolist()).to_dict()
+    return grouped

@@ -1,7 +1,7 @@
 """API to extract the information of steam games and user's reviews and items"""
 
 from fastapi import FastAPI
-from api.api_utils import money_spent, num_user_review, genre_rank
+from api.api_utils import money_spent, num_user_review, genre_rank, top_users_in_genre
 
 
 app_description = """
@@ -51,3 +51,17 @@ def genre(genre_name:str):
     rank = genre_rank(genre_name)
     
     return {"rank_number: ": rank}
+
+
+@app.get('/userforgenre/{genre_name}')
+def userforgenre(genre_name:str):
+    """
+    Insert the name of a genre to see the top 5 users with the most time spended.
+
+    Name is case sensitive.
+
+    If genre not found, a message will appear.
+    """
+    top_users = top_users_in_genre(genre_name)
+    
+    return {"Top users: ": top_users}

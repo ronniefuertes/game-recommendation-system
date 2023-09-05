@@ -20,6 +20,7 @@ path_1u = os.path.join(current_directory, 'api', 'datasets', 'user_data_1.csv')
 path_1g = os.path.join(current_directory, 'api', 'datasets', 'games_data_1.csv')
 path_2u = os.path.join(current_directory, 'api', 'datasets', 'user_data_2.csv')
 path_grk = os.path.join(current_directory, 'api', 'datasets', 'genre_ranking.csv')
+path_4u = os.path.join(current_directory, 'api', 'datasets', 'user_data_4.csv')
 
 
 # path_1u = r"api\datasets\user_data_1.csv"
@@ -196,3 +197,31 @@ def genre_rank(genre: str) -> int:
             rank_val = idx_row + 1
     
     return rank_val
+
+
+def top_users_in_genre(genre: str) -> list:
+    """Check for the top 5 users with the most time spended in a given genre."""
+    # Load data from a CSV file into a DataFrame (adjust path_2u to your file path)
+    genre_users_df = pd.read_csv(path_4u)
+
+    # Check if the specified genre exists in the DataFrame
+    if genre not in genre_users_df['genre'].values:
+        return f"Genre '{genre}' not found in the DataFrame."
+    
+    # Filter the DataFrame by the specified genre
+    genre_filter_df = genre_users_df[genre_users_df['genre'] == genre]
+
+    genre_filter_df_1 = genre_filter_df.copy()
+    # Replace 'nan' with None
+    genre_filter_df_1['users_info'] = genre_filter_df_1['users_info'].str.replace('nan', 'None')
+
+    # Convert the string to a list of dictionaries using ast.literal_eval
+    genre_filter_df_1['users_info'] = genre_filter_df_1['users_info'].apply(lambda x: ast.literal_eval(x) if x is not None else [])
+
+    # Sort the list of users by time_spent in descending order
+    sorted_users = sorted(genre_filter_df_1['users_info'][0], key=lambda x: x['time_spent'], reverse=True)
+    
+    # Get the top 5 users
+    top_users = sorted_users[:5]
+    
+    return top_users
