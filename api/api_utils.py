@@ -200,8 +200,8 @@ def genre_rank(genre: str) -> int:
 
 
 def top_users_in_genre(genre: str) -> list:
-    """Check for the top 5 users with the most time spended in a given genre."""
-    # Load data from a CSV file into a DataFrame (adjust path_2u to your file path)
+    """Check for the top 5 users with the most time spent in a given genre."""
+    # Load data from a CSV file into a DataFrame
     genre_users_df = pd.read_csv(path_4u)
 
     # Check if the specified genre exists in the DataFrame
@@ -211,6 +211,10 @@ def top_users_in_genre(genre: str) -> list:
     # Filter the DataFrame by the specified genre
     genre_filter_df = genre_users_df[genre_users_df['genre'] == genre]
 
+    # Check if the filtered DataFrame is empty
+    if genre_filter_df.empty:
+        return f"No data found for genre '{genre}'."
+
     genre_filter_df_1 = genre_filter_df.copy()
     # Replace 'nan' with None
     genre_filter_df_1['users_info'] = genre_filter_df_1['users_info'].str.replace('nan', 'None')
@@ -219,7 +223,7 @@ def top_users_in_genre(genre: str) -> list:
     genre_filter_df_1['users_info'] = genre_filter_df_1['users_info'].apply(lambda x: ast.literal_eval(x) if x is not None else [])
 
     # Sort the list of users by time_spent in descending order
-    sorted_users = sorted(genre_filter_df_1['users_info'][0], key=lambda x: x['time_spent'], reverse=True)
+    sorted_users = sorted(genre_filter_df_1['users_info'].iloc[0], key=lambda x: x['time_spent'], reverse=True)
     
     # Get the top 5 users
     top_users = sorted_users[:5]
