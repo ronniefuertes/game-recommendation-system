@@ -14,6 +14,9 @@ Available functions:
 import ast
 from datetime import datetime
 import pandas as pd
+import spacy
+# Load spaCy's Multi-language model
+nlp = spacy.load('xx_ent_wiki_sm')
 
 
 def calculate_total_price(id_item, dataframe, column_name_1, column_name_2):
@@ -409,3 +412,35 @@ def create_dict_genre(dataframe):
 
     grouped = dataframe.groupby('genres').apply(lambda group: group.apply(create_user_data, axis=1).tolist()).to_dict()
     return grouped
+
+
+# Define a custom function to perform text preprocessing
+def preprocess_text(text):
+    if type(text) == str or (type(text) == list and len(text) != 0):
+        try:
+            if isinstance(text, list):
+                # Handle lists of reviews by joining them
+                text = ' '.join(text)
+
+            doc = nlp(text)
+            cleaned_tokens = []
+
+            for token in doc:
+                # Step 2: Stop Word Removal
+                if not token.is_stop:
+                    # Step 3: Lowercasing
+                    cleaned_tokens.append(token.text.lower())
+
+            # Step 4: Removing Punctuation and Numbers
+            cleaned_tokens = [token for token in cleaned_tokens if token.isalpha()]
+
+            # Step 5: Custom Word Filtering (e.g., remove "recommended")
+            custom_filter_words = ["recommended"]
+            cleaned_tokens = [token for token in cleaned_tokens if token not in custom_filter_words]
+
+            # Step 6: Join cleaned tokens back into a single string
+            return ' '.join(cleaned_tokens)
+        except:
+            return ''  # Handle exceptions gracefully
+    else:
+        return ''  # Handle NaN values and empty lists gracefully
