@@ -308,3 +308,46 @@ def convert_column_to_dates(dataframe, column_name, original_patterns=None):
     }
 
     return summary
+
+
+def correspond(dataframe, column_name_1, column_name_2):
+    """ Create a dict to store a value_1 with it's corresponding value_2"""
+    
+    # Initialize an empty dictionary to store ID-time pairs
+    key_val = {}
+    
+    # Initialize an empty list to keep track of rows with inconsistent data
+    report = []
+    
+    # Iterate through each row in the DataFrame
+    for idx_row, row in dataframe.iterrows():
+        # Extract the ID list and time list from the specified columns
+        id_list = row[column_name_1]
+        time_list = row[column_name_2]
+        
+        # Check if the lengths of the ID list and time list are the same
+        if len(id_list) == len(time_list):
+            # Iterate through each ID and its corresponding time
+            for idx_id, id in enumerate(id_list):
+                # Check if the ID already exists in the key_val dictionary
+                if id in key_val:
+                    # If it exists, add the current time to the existing total time
+                    key_val[id] += time_list[idx_id]
+                else:
+                    # If it's a new ID, create a new entry in the dictionary
+                    key_val[id] = time_list[idx_id]
+        
+        # Check if the time_list is empty
+        elif len(time_list) == 0:
+            # If time_list is empty, initialize the ID entries in key_val to 0
+            for idx_id, id in enumerate(id_list):
+                if id not in key_val:
+                    key_val[id] = 0
+        
+        else:
+            # If the lengths of ID and time lists don't match and time_list is not empty,
+            # record the row index as an inconsistency
+            report.append(idx_row)
+    
+    # Return the dictionary containing ID-time pairs and the list of inconsistent rows
+    return key_val, report

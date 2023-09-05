@@ -1,7 +1,7 @@
 """API to extract the information of steam games and user's reviews and items"""
 
 from fastapi import FastAPI
-from api.api_utils import money_spent, num_user_review
+from api.api_utils import money_spent, num_user_review, genre_rank
 
 
 app_description = """
@@ -22,7 +22,7 @@ def userdata(user_id:str):
     """
     money_info, percentage = money_spent(user_id)
     
-    return {'User ID:':money_info, 'recommendation_percentage':percentage}
+    return {'Money spent:':money_info, 'Recommendation percentage':percentage}
 
 
 @app.get('/countreviews/{dates}')
@@ -36,4 +36,18 @@ def countreviews(dates:str):
     """
     num_users, percentage = num_user_review(dates)
     
-    return {'User ID:':num_users, 'recommendation_percentage':percentage}
+    return {'Number of users:':num_users, 'Recommendation percentage':percentage}
+
+@app.get('/genre/{genre_name}')
+def genre(genre_name:str):
+    """
+    Insert the name of a genre to see the position in which a genre is found in the ranking of 
+    the genres analyzed under the PlayTimeForever column.
+
+    Name is case sensitive.
+
+    0 will be display if genre is not found.
+    """
+    rank = genre_rank(genre_name)
+    
+    return {"rank_number: ": rank}

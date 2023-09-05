@@ -19,6 +19,7 @@ current_directory = os.getcwd()
 path_1u = os.path.join(current_directory, 'api', 'datasets', 'user_data_1.csv')
 path_1g = os.path.join(current_directory, 'api', 'datasets', 'games_data_1.csv')
 path_2u = os.path.join(current_directory, 'api', 'datasets', 'user_data_2.csv')
+path_grk = os.path.join(current_directory, 'api', 'datasets', 'genre_ranking.csv')
 
 
 # path_1u = r"api\datasets\user_data_1.csv"
@@ -179,3 +180,19 @@ def num_user_review(dates: str) -> int:
         percentage = 0
 
     return count, round(percentage, 2)
+
+def genre_rank(genre: str) -> int:
+    """Check for genre_rank of a genre based on time spent by users historically."""
+
+    # Load data from a CSV file into a DataFrame (adjust path_2u to your file path)
+    genre_rank_df = pd.read_csv(path_grk)
+
+    rank_val = 0
+
+    for idx_row, row in genre_rank_df.iterrows():
+        row_val = row["genre"]
+
+        if isinstance(genre, str) and genre == row_val:
+            rank_val = idx_row + 1
+    
+    return rank_val
